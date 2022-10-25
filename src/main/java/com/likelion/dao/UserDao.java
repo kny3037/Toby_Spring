@@ -2,113 +2,54 @@ package com.likelion.dao;
 
 import com.likelion.domain.User;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.List;
 import java.util.Map;
 
 public class UserDao {
 
     private DataSource dataSource;
-    private JdbcContext jdbcContext;
+    private JdbcTemplate jdbcTemplate;
 
     public UserDao(DataSource dataSource) {
-        this.dataSource = dataSource;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-
-
-    public void jdbcContextWithStatmentStrategy(StatmentStrategy statmentStrategy) throws ClassNotFoundException {
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try{
-            conn = dataSource.getConnection();
-            pstmt = statmentStrategy.makePreparedStatement(conn);
-            pstmt.executeUpdate();
-        }catch (SQLException e){
-            throw new Error(e.getMessage());
-        }finally {
-            if(pstmt != null){
-                try {
-                    pstmt.close();
-                }catch (SQLException e){
-                }
-            }
-            if (conn != null){
-                try{
-                    conn.close();
-                }catch (SQLException e){
-                }
-            }
+    RowMapper<User> rowMapper = new RowMapper<User>() {
+        @Override
+        public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+            User user = new User(rs.getString
+                    ("id"),rs.getString("name"),rs.getString("password"));
+            return user;
         }
+    };
+
+    public void add(User user) {
+        this.jdbcTemplate.update
+                ("INSERT INTO users(id, name, password)VALUES(?,?,?);",
+                        user.getId(),user.getName(),user.getPassword());
     }
 
-    public void add(User user) throws SQLException, ClassNotFoundException {
-        jdbcContextWithStatmentStrategy(new AddAllStrategy(user));
-        this.jdbcContext.workWithStatmentStrategy(new StatmentStrategy() {
-            @Override
-            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
-                PreparedStatement pstmt = conn.prepareStatement
-                        ("insert into users(id,name,password)values(?,?,?)");
-                return pstmt;
-            }
-        });
+    public User findById(String id){
+        String sql = "SELECT * FROM users WHERE id=?";
+        return jdbcTemplate.queryForObject(sql,rowMapper,id);
     }
 
-    public User findById(String id) throws SQLException, ClassNotFoundException {
-        /*Connection conn = connectionMaker.getConncetion();
-        PreparedStatement pstmt = conn.prepareStatement
-                ("select*from users where id = ?");
-        pstmt.setString(1,id);
-
-        ResultSet rs = pstmt.executeQuery();
-        rs.next();
-
-        User user = new User
-                (rs.getString("id"), rs.getNString("name"),rs.getString("password"));
-
-        rs.close();
-        pstmt.close();
-        conn.close();
-
-        return user;*/
-        return null;
+    public void deleteAll(){
+       this.jdbcTemplate.update("delete from users");
     }
 
-    public void deleteAll() throws SQLException, ClassNotFoundException {
-        jdbcContextWithStatmentStrategy(new DeleteAllStrategy());
-        this.jdbcContext.workWithStatmentStrategy(new StatmentStrategy() {
-            @Override
-            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
-                PreparedStatement pstmt = conn.prepareStatement
-                        ("delete from users");
-                return pstmt;
-            }
-        });
+    public int getCount() {
+        return this.jdbcTemplate.queryForObject("select count(*)from users",
+                Integer.class);
     }
 
-    public int getCount() throws SQLException, ClassNotFoundException {
-        /*Connection conn = connectionMaker.getConncetion();
-        PreparedStatement pstmt = conn.prepareStatement
-                ("select count(*) from users");
-        ResultSet rs = pstmt.executeQuery();
-        rs.next();
-        int count = rs.getInt(1);
-
-        rs.close();
-        pstmt.close();
-        conn.close();
-*/
-        return 0;
+    public List<User> getAll(){
+        String sql = "select * from users";
+        return this.jdbcTemplate.query(sql, rowMapper);
     }
-
-
-    public static void main(String[] args) {
-
-    }
-
-
 }
 

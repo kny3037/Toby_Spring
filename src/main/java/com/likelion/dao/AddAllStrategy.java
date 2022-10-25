@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class AddAllStrategy implements StatmentStrategy{
+public class AddAllStrategy implements StatementStrategy{
 
     User user;
 
@@ -17,7 +17,7 @@ public class AddAllStrategy implements StatmentStrategy{
     @Override
     public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
         PreparedStatement pstmt = conn.prepareStatement
-                ("insert into users(id,name,password)values(?,?,?)");
+                ("INSERT INTO users(id,name,password) VALUES(?,?,?);");
         pstmt.setString(1, user.getId());
         pstmt.setString(2, user.getName());
         pstmt.setString(3, user.getPassword());

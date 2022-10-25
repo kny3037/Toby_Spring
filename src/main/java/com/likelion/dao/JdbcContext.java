@@ -12,13 +12,13 @@ public class JdbcContext {
         this.dataSource = dataSource;
     }
 
-    public void workWithStatmentStrategy(StatmentStrategy statmentStrategy){
+    public void workWithStatementStrategy(StatementStrategy statementStrategy){
         Connection conn = null;
         PreparedStatement pstmt = null;
 
         try{
             conn = dataSource.getConnection();
-            pstmt = statmentStrategy.makePreparedStatement(conn);
+            pstmt = statementStrategy.makePreparedStatement(conn);
             pstmt.executeUpdate();
         }catch (SQLException e){
             throw new Error(e.getMessage());
@@ -38,4 +38,14 @@ public class JdbcContext {
         }
     }
 
+    public void executeQuery(final String query) {
+       workWithStatementStrategy(new StatementStrategy() {
+            @Override
+            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
+                PreparedStatement pstmt = conn.prepareStatement(query);
+                return pstmt;
+            }
+        });
+
+    }
 }
