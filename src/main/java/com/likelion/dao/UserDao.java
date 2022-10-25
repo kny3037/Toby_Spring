@@ -1,20 +1,22 @@
 package com.likelion.dao;
 
 import com.likelion.domain.User;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.Map;
 
 public class UserDao {
-    private ConnectionMaker connectionMaker;
 
-    public UserDao() {
-        this.connectionMaker = new AwsConnectionMaker();
+    private DataSource dataSource;
+    private JdbcContext jdbcContext;
+
+    public UserDao(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
-    public UserDao(ConnectionMaker connectionMaker) {
-        this.connectionMaker = connectionMaker;
-    }
+
 
     public void jdbcContextWithStatmentStrategy(StatmentStrategy statmentStrategy) throws ClassNotFoundException {
 
@@ -22,7 +24,7 @@ public class UserDao {
         PreparedStatement pstmt = null;
 
         try{
-            conn = connectionMaker.getConncetion();
+            conn = dataSource.getConnection();
             pstmt = statmentStrategy.makePreparedStatement(conn);
             pstmt.executeUpdate();
         }catch (SQLException e){
@@ -45,10 +47,18 @@ public class UserDao {
 
     public void add(User user) throws SQLException, ClassNotFoundException {
         jdbcContextWithStatmentStrategy(new AddAllStrategy(user));
+        this.jdbcContext.workWithStatmentStrategy(new StatmentStrategy() {
+            @Override
+            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
+                PreparedStatement pstmt = conn.prepareStatement
+                        ("insert into users(id,name,password)values(?,?,?)");
+                return pstmt;
+            }
+        });
     }
 
     public User findById(String id) throws SQLException, ClassNotFoundException {
-        Connection conn = connectionMaker.getConncetion();
+        /*Connection conn = connectionMaker.getConncetion();
         PreparedStatement pstmt = conn.prepareStatement
                 ("select*from users where id = ?");
         pstmt.setString(1,id);
@@ -63,15 +73,24 @@ public class UserDao {
         pstmt.close();
         conn.close();
 
-        return user;
+        return user;*/
+        return null;
     }
 
     public void deleteAll() throws SQLException, ClassNotFoundException {
         jdbcContextWithStatmentStrategy(new DeleteAllStrategy());
+        this.jdbcContext.workWithStatmentStrategy(new StatmentStrategy() {
+            @Override
+            public PreparedStatement makePreparedStatement(Connection conn) throws SQLException {
+                PreparedStatement pstmt = conn.prepareStatement
+                        ("delete from users");
+                return pstmt;
+            }
+        });
     }
 
     public int getCount() throws SQLException, ClassNotFoundException {
-        Connection conn = connectionMaker.getConncetion();
+        /*Connection conn = connectionMaker.getConncetion();
         PreparedStatement pstmt = conn.prepareStatement
                 ("select count(*) from users");
         ResultSet rs = pstmt.executeQuery();
@@ -81,8 +100,8 @@ public class UserDao {
         rs.close();
         pstmt.close();
         conn.close();
-
-        return count;
+*/
+        return 0;
     }
 
 
