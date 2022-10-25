@@ -32,6 +32,7 @@ public class UserDao {
         Connection conn = connectionMaker.getConncetion();
         PreparedStatement pstmt = conn.prepareStatement
                 ("select*from users where id = ?");
+        pstmt.setString(1,id);
 
         ResultSet rs = pstmt.executeQuery();
         rs.next();
