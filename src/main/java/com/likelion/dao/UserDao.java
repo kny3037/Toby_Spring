@@ -9,26 +9,24 @@ public class UserDao {
     private ConnectionMaker connectionMaker;
 
     public UserDao() {
+        this.connectionMaker = new AwsConnectionMaker();
     }
 
     public UserDao(ConnectionMaker connectionMaker) {
         this.connectionMaker = connectionMaker;
     }
 
-    public void add(User user) throws SQLException, ClassNotFoundException {
+    public void jdbcContextWithStatmentStrategy(StatmentStrategy statmentStrategy) throws ClassNotFoundException {
+
         Connection conn = null;
         PreparedStatement pstmt = null;
 
-        try{conn = connectionMaker.getConncetion();
-            pstmt = conn.prepareStatement
-                    ("insert into users(id,name,password)values(?,?,?)");
-            pstmt.setString(1, user.getId());
-            pstmt.setString(2, user.getName());
-            pstmt.setString(3, user.getPassword());
-
+        try{
+            conn = connectionMaker.getConncetion();
+            pstmt = statmentStrategy.makePreparedStatement(conn);
             pstmt.executeUpdate();
         }catch (SQLException e){
-            throw e;
+            throw new Error(e.getMessage());
         }finally {
             if(pstmt != null){
                 try {
@@ -38,11 +36,15 @@ public class UserDao {
             }
             if (conn != null){
                 try{
-                conn.close();
+                    conn.close();
                 }catch (SQLException e){
                 }
             }
         }
+    }
+
+    public void add(User user) throws SQLException, ClassNotFoundException {
+        jdbcContextWithStatmentStrategy(new AddAllStrategy(user));
     }
 
     public User findById(String id) throws SQLException, ClassNotFoundException {
@@ -65,14 +67,7 @@ public class UserDao {
     }
 
     public void deleteAll() throws SQLException, ClassNotFoundException {
-        Connection conn = connectionMaker.getConncetion();
-        PreparedStatement pstmt = conn.prepareStatement
-                ("delete from users");
-
-        pstmt.executeUpdate();
-
-        pstmt.close();
-        conn.close();
+        jdbcContextWithStatmentStrategy(new DeleteAllStrategy());
     }
 
     public int getCount() throws SQLException, ClassNotFoundException {
